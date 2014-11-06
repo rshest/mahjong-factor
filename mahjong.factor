@@ -1,5 +1,5 @@
 USING: locals prettyprint arrays sequences kernel shuffle combinators
-math math.vector
+math math.vectors
 opengl opengl.gl opengl.glu opengl.demo-support opengl.textures
 game.worlds game.loop ui.gadgets.worlds ui.pixel-formats
 literals accessors images.loader
