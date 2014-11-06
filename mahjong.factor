@@ -140,8 +140,8 @@ M: mahjong-world begin-game-world
 
 : in-stone? ( loc stone -- t/f )
   { [ i>> ] [ j>> ] [ layer>> ] } cleave stone-pos
-    [ > ] 2map
-  ;
+    dup STONE-EXTENTS v+
+    pick [ v> vall? ] 2bi@ and ;
   
 :: mouse-click ( world loc -- )
   world board>> [ loc swap in-stone? ] find-last
