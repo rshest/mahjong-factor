@@ -5,7 +5,7 @@ game.worlds game.loop ui.gadgets.worlds ui.pixel-formats
 literals accessors images.loader
 splitting grouping hashtables assocs
 io.files io.encodings.ascii unicode.categories math.ranges math.order sorting.slots
-game.input game.input.scancodes
+game.input game.input.scancodes ui.gestures
 ;
 
 IN: mahjong
@@ -138,13 +138,19 @@ M: mahjong-world begin-game-world
     dup layouts>> "Turtle" of >>board
     drop ;
 
-: handle-mouse ( world mouse -- )
-    buttons>> first [ { } >>board  ] when drop ; 
-
-M: mahjong-world tick-game-world
-    dup focused?>> [ read-mouse handle-mouse
-                       reset-mouse ] [ drop ] if ;
-
+: in-stone? ( loc stone -- t/f )
+  { [ i>> ] [ j>> ] [ layer>> ] } cleave stone-pos
+    [ > ] 2map
+  ;
+  
+:: mouse-click ( world loc -- )
+  world board>> [ loc swap in-stone? ] find-last
+  [ world board>> nth 1 >>bg-id ] when drop ;
+  
+mahjong-world H{
+  { T{ button-down f f 1 } [ dup hand-rel mouse-click ] }
+} set-gestures
+                     
 M: mahjong-world draw-world*
     enable-blend no-mip-filter setup-matrices clear-screen
     board>> [ draw-stone ] each ;
@@ -155,7 +161,6 @@ GAME: mahjong {
     { pixel-format-attributes {
         windowed double-buffered T{ depth-bits { value 24 } } } }
     { pref-dim { $ WINDOW-WIDTH $ WINDOW-HEIGHT } }
-    { use-game-input? t }  
     { tick-interval-nanos $[ 60 fps ] }
 } ;
 
