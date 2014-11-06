@@ -2,7 +2,10 @@ USING: locals prettyprint arrays sequences kernel shuffle combinators
 math math.vectors
 opengl opengl.gl opengl.glu opengl.demo-support opengl.textures
 game.worlds game.loop ui.gadgets.worlds ui.pixel-formats
-literals accessors images.loader ;
+literals accessors images.loader
+splitting grouping hashtables assocs
+io.files io.encodings.ascii unicode.categories math.ranges ;
+
 IN: mahjong
 
 CONSTANT: width 1024
@@ -12,7 +15,7 @@ CONSTANT: bg-color        [ 0.3 0.24 0.13 0.0 ]
 CONSTANT: resources-path  "vocab:mahjong/"
 
 CONSTANT: face-offset     { 0 8 }
-CONSTANT: stone-extents   { 65 77 }
+CONSTANT: stone-extents   { 64 75 }
 CONSTANT: stone-3d-offset { -7 -10 }
 
 TUPLE: sprite-atlas
@@ -84,17 +87,37 @@ TUPLE: stone i j layer id { bg-id initial: 0 } ;
 : draw-stone ( stone -- )
     { [ id>> ] [ bg-id>> ] [ i>> ] [ j>> ] [ layer>> ] } cleave
     stone-pos draw-stone-by-pos ;
+
+:: peel-block ( val i j pos-arr layer -- layout-entry/f )
+    val layer = [ i j val 0 0 stone boa ] [ f ] if ;
+
+:: peel-layer ( layer pos-arr -- layout-entries )
+    pos-arr [
+        swap [
+            pick pos-arr layer peel-block
+        ] map-index sift nip
+    ] map-index concat ;
+
+: parse-layout ( lines -- layout )
+    [ >array [ 48 - ] map ] map
+    [let :> pos-arr
+        pos-arr supremum supremum :> max-layer
+        max-layer 1 [a,b] [ pos-arr peel-layer ] map concat ] ;
+
+: load-layouts ( -- layouts )
+    resources-path "layouts.txt" append ascii file-lines 
+    [ "---" swap start ] split-when harvest 2 group
+    [ dup first first [ blank? ] trim
+      swap second parse-layout 2array ] map >hashtable ;
     
 TUPLE: mahjong-world < game-world 
-    { board initial: { } } ;
+    { board initial: { } } layouts ;
 
 M: mahjong-world begin-game-world
     sprite-atlases [ load-sprite-atlas ] each
-    150 iota [ [let :> idx
-        idx 15 /mod [ 2 * ] bi@ swap
-        0 idx 0  stone boa ] ] map >>board
-    drop
-    ;
+    load-layouts >>layouts
+    dup layouts>> "Turtle" of >>board
+    drop ;
 
 M: mahjong-world draw-world*
     enable-blend no-mip-filter setup-matrices clear-screen
