@@ -4,7 +4,9 @@ opengl opengl.gl opengl.glu opengl.demo-support opengl.textures
 game.worlds game.loop ui.gadgets.worlds ui.pixel-formats
 literals accessors images.loader
 splitting grouping hashtables assocs
-io.files io.encodings.ascii unicode.categories math.ranges math.order sorting.slots ;
+io.files io.encodings.ascii unicode.categories math.ranges math.order sorting.slots
+game.input game.input.scancodes
+;
 
 IN: mahjong
 
@@ -136,6 +138,13 @@ M: mahjong-world begin-game-world
     dup layouts>> "Turtle" of >>board
     drop ;
 
+: handle-mouse ( world mouse -- )
+    buttons>> first [ { } >>board  ] when drop ; 
+
+M: mahjong-world tick-game-world
+    dup focused?>> [ read-mouse handle-mouse
+                       reset-mouse ] [ drop ] if ;
+
 M: mahjong-world draw-world*
     enable-blend no-mip-filter setup-matrices clear-screen
     board>> [ draw-stone ] each ;
@@ -146,6 +155,7 @@ GAME: mahjong {
     { pixel-format-attributes {
         windowed double-buffered T{ depth-bits { value 24 } } } }
     { pref-dim { $ WINDOW-WIDTH $ WINDOW-HEIGHT } }
+    { use-game-input? t }  
     { tick-interval-nanos $[ 60 fps ] }
 } ;
 
