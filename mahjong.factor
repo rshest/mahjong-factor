@@ -23,9 +23,23 @@ CONSTANT: DEFAULT-STONE-ID 4
 CONSTANT: STONE-NORMAL     0
 CONSTANT: STONE-SELECTED   1
 
+CONSTANT: BLOCK-OFFSETS    { { 0 0 } { 1 0 } { 0 1 } { 1 1 } }
+
+CONSTANT: TOP-BLOCKING     { { 0 0 1 } { 0 1 1 } { 1 0 1 } { 1 1 1 } }
+CONSTANT: LEFT-BLOCKING    { { -1 0 0 } { -1 1 0 } }
+CONSTANT: RIGHT-BLOCKING   { { 2 0 0 } { 2 1 0 } }
+
 TUPLE: sprite-atlas
     file-path cols rows frame-width frame-height
     { texture-id initial: 0 } s-scale t-scale ;
+
+TUPLE: stone i j layer id { bg-id initial: 0 } ;
+TUPLE: stone-blocking top left right ;
+
+CONSTANT: SPRITES {
+    T{ sprite-atlas f "stones_bg.png" 2 1 70 85 }
+    T{ sprite-atlas f "stones_fg.png" 16 15 64 64 } }
+
 
 : enable-blend ( -- ) 
     GL_BLEND glEnable
@@ -54,46 +68,37 @@ TUPLE: sprite-atlas
     dup frame-width>> GL_TEXTURE_WIDTH get-uv-scale >>s-scale
     dup frame-height>> GL_TEXTURE_HEIGHT get-uv-scale >>t-scale drop ;
 
-CONSTANT: sprite-atlases {
-    T{ sprite-atlas f "stones_bg.png" 2 1 70 85 }
-    T{ sprite-atlas f "stones_fg.png" 16 15 64 64 } }
-
-:: draw-sprite ( atlas-id sprite-id pos -- )
-    atlas-id sprite-atlases nth
-    dup texture-id>> GL_TEXTURE_2D swap glBindTexture ! set the atlas texture as current   
+:: draw-sprite ( atlas sprite-id pos -- )
+    GL_TEXTURE_2D atlas texture-id>> glBindTexture    
     no-mip-filter
     [let pos first  :> x
          pos second :> y
-         dup frame-width>>  x + :> r
-         dup frame-height>> y + :> b
-         dup cols>> sprite-id swap /mod [ >float ] bi@ :> col :> row
-         dup s-scale>> col * :> u
-         dup t-scale>> row * :> v
-         dup s-scale>> u + :> u1
-         dup t-scale>> v + :> v1
+         atlas frame-width>>  x + :> r
+         atlas frame-height>> y + :> b
+         atlas cols>> sprite-id swap /mod [ >float ] bi@ :> col :> row
+         atlas s-scale>> col * :> u
+         atlas t-scale>> row * :> v
+         atlas s-scale>> u + :> u1
+         atlas t-scale>> v + :> v1
         GL_QUADS [
             u  v  glTexCoord2f x y glVertex2f
             u1 v  glTexCoord2f r y glVertex2f
             u1 v1 glTexCoord2f r b glVertex2f
             u  v1 glTexCoord2f x b glVertex2f
-        ] do-state ] drop ;
+        ] do-state ] ;
 
 :: stone-pos ( i j layer -- pos )
     { i j } STONE-EXTENTS v* 2 v/n
     STONE-3D-OFFSET layer v*n v+
     ;
 
-TUPLE: stone i j layer id { bg-id initial: 0 } ;
-    
 :: draw-stone-by-pos ( stone-id bg-id pos -- )
-    0 bg-id pos draw-sprite
-    1 stone-id pos FACE-OFFSET v+ draw-sprite ;
+    0 SPRITES nth bg-id pos draw-sprite
+    1 SPRITES nth stone-id pos FACE-OFFSET v+ draw-sprite ;
 
 : draw-stone ( stone -- )
     { [ id>> ] [ bg-id>> ] [ i>> ] [ j>> ] [ layer>> ] } cleave
     stone-pos draw-stone-by-pos ;
-
-CONSTANT: block-offsets { { 0 0 } { 1 0 } { 0 1 } { 1 1 } }
 
 :: set-at ( pos val pos-arr -- )
     val pos second
@@ -101,10 +106,10 @@ CONSTANT: block-offsets { { 0 0 } { 1 0 } { 0 1 } { 1 1 } }
     set-nth ;
 
 :: dec-block ( pos-arr i j layer --  )
-    block-offsets [ { j i } v+ layer -1 + pos-arr set-at ] each ;
+    BLOCK-OFFSETS [ { j i } v+ layer -1 + pos-arr set-at ] each ;
 
 :: peel-block ( val i j pos-arr layer -- layout-entry/f )
-    block-offsets [ { j i } v+ pos-arr [ swap ?nth ] reduce ] map
+    BLOCK-OFFSETS [ { j i } v+ pos-arr [ swap ?nth ] reduce ] map
     [ layer = ] all?
     [ pos-arr i j layer [ dec-block ] 3keep
       DEFAULT-STONE-ID STONE-NORMAL stone boa ] [ f ] if ;
@@ -128,12 +133,21 @@ CONSTANT: block-offsets { { 0 0 } { 1 0 } { 0 1 } { 1 1 } }
     [ "---" swap start ] split-when harvest 2 group
     [ dup first first [ blank? ] trim
       swap second parse-layout 2array ] map >hashtable ;
+
+: coverage-table ( layout -- table )
+    [ [let :> idx [ i>> ] [ j>> ] [ layer>> ] tri :> i :> j :> layer
+        BLOCK-OFFSETS [ { i j } v+ { layer } append idx 2array ] map
+    ] ] map-index concat >hashtable ;
+
+: get-blocking-neighbors ( layout -- blocking-arr )
     
+    ;
+  
 TUPLE: mahjong-world < game-world 
     { board initial: { } } layouts ;
 
 M: mahjong-world begin-game-world
-    sprite-atlases [ load-sprite-atlas ] each
+    SPRITES [ load-sprite-atlas ] each
     load-layouts >>layouts
     dup layouts>> "Turtle" of >>board
     drop ;
