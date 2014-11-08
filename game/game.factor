@@ -2,7 +2,7 @@ USING: kernel math accessors sequences arrays
 math.vectors
 splitting grouping hashtables sets hash-sets assocs locals
 io.files io.encodings.ascii unicode.categories math.ranges math.order sorting.slots
-;
+random ;
 IN: mahjong.game
 
 CONSTANT: DEFAULT-STONE-ID 4
@@ -28,6 +28,8 @@ TUPLE: stone i j layer id { bg-id initial: 0 } blocking ;
 : hide-stones ( layout idx-seq -- )
     [ over nth STONE-HIDDEN >>bg-id ] map 2drop ;
 
+<PRIVATE
+
 :: set-at ( pos val pos-arr -- )
     val pos second
     pos first pos-arr nth
@@ -47,6 +49,8 @@ TUPLE: stone i j layer id { bg-id initial: 0 } blocking ;
             pick pos-arr layer peel-block
         ] map-index sift nip
     ] map-index concat ;
+
+PRIVATE>
 
 : parse-layout ( lines -- layout )
     [ >array [ 48 - ] map ] map
@@ -83,3 +87,12 @@ TUPLE: stone i j layer id { bg-id initial: 0 } blocking ;
     [ "---" swap start ] split-when harvest 2 group
     [ dup first first [ blank? ] trim
       swap second parse-layout 2array ] map >hashtable ;
+
+: load-stone-descriptions ( res-path -- descr-array )
+    "stones_desc.txt" append ascii file-lines 
+    [ "|" split ] map [ length 2 = ] filter ;
+
+: init-layout-random ( layout num-stone-types -- )
+    over length 4 / swap random-integers 
+    4 [ dup ] replicate concat nip
+    [ >>id drop ] 2each ;

@@ -37,13 +37,15 @@ CONSTANT: SPRITES {
     stone-pos draw-stone-by-pos ;
   
 TUPLE: mahjong-world < game-world 
-    { board initial: { } } layouts ;
+    { board initial: { } } layouts stone-descr ;
 
 M: mahjong-world begin-game-world
     SPRITES [ RESOURCES-PATH load-sprite-atlas ] each
     RESOURCES-PATH load-layouts >>layouts
     dup layouts>> "Turtle" of >>board
     dup layouts>> values [ set-layout-blockers ] each
+    RESOURCES-PATH load-stone-descriptions >>stone-descr
+    dup [ board>> ] [ stone-descr>> length ] bi init-layout-random  
     drop ;
 
 : in-stone? ( loc stone -- t/f )
