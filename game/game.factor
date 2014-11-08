@@ -9,7 +9,7 @@ CONSTANT: DEFAULT-STONE-ID 4
 
 CONSTANT: STONE-NORMAL     0
 CONSTANT: STONE-SELECTED   1
-CONSTANT: STONE-REMOVED    -1
+CONSTANT: STONE-HIDDEN    -1
 
 CONSTANT: BLOCK-OFFSETS    { { 0 0 } { 1 0 } { 0 1 } { 1 1 } }
 
@@ -24,6 +24,9 @@ TUPLE: stone i j layer id { bg-id initial: 0 } blocking ;
 : <stone> ( i j layer -- stone ) DEFAULT-STONE-ID STONE-NORMAL <stone-blocking> stone boa ;
 
 : ijlayer>> ( stone -- i j layer ) [ i>> ] [ j>> ] [ layer>> ] tri ;
+
+: hide-stones ( layout idx-seq -- )
+    [ over nth STONE-HIDDEN >>bg-id ] map 2drop ;
 
 :: set-at ( pos val pos-arr -- )
     val pos second
@@ -68,8 +71,12 @@ TUPLE: stone i j layer id { bg-id initial: 0 } blocking ;
     [ coverage-table ] keep
     [ ijlayer>> 3array 2dup get-tlr-blocking nip ] map nip ;
 
-: is-free? ( stone board -- t/f )
-    2drop f ;
+: set-layout-blockers ( layout -- )
+    [ build-layout-blockers ] keep [ swap >>blocking drop ] 2each ;
+
+:: is-blocked? ( stone board -- t/f )
+    stone blocking>> [ top>> ] [ left>> ] [ right>> ] tri 
+    [ [ board nth bg-id>> STONE-HIDDEN = not ] any? ] tri@ and or ;
 
 : load-layouts ( res-path -- layouts )
     "layouts.txt" append ascii file-lines 

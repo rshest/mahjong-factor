@@ -43,7 +43,7 @@ M: mahjong-world begin-game-world
     SPRITES [ RESOURCES-PATH load-sprite-atlas ] each
     RESOURCES-PATH load-layouts >>layouts
     dup layouts>> "Turtle" of >>board
-    dup layouts>> values [ [ build-layout-blockers ] keep [ blocking>> 2drop ] 2each ] each
+    dup layouts>> values [ set-layout-blockers ] each
     drop ;
 
 : in-stone? ( loc stone -- t/f )
@@ -53,7 +53,9 @@ M: mahjong-world begin-game-world
   
 :: mouse-click ( world loc -- )
   world board>> [ loc swap in-stone? ] find-last
-  [ world board>> nth 1 >>bg-id ] when drop ;
+  [ world board>> nth 
+    dup world board>> is-blocked? not [ 1 >>bg-id ] when 
+    ] when drop ;
   
 mahjong-world H{
   { T{ button-down f f 1 } [ dup hand-rel mouse-click ] }
