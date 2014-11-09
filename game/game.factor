@@ -118,6 +118,6 @@ PRIVATE>
     [ "|" split ] map [ length 2 = ] filter ;
 
 : init-layout-random ( layout num-stone-types -- )
-    over length 4 / swap random-integers 
+    iota over length 4 / sample 
     4 [ dup ] replicate concat nip
     [ >>id drop ] 2each ;

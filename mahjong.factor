@@ -73,7 +73,7 @@ M: mahjong-world draw-world*
 
 GAME: mahjong {
     { world-class mahjong-world }
-    { title "Factor Mahjong" }
+    { title "Mahjong Solitaire" }
     { pixel-format-attributes {
         windowed double-buffered T{ depth-bits { value 24 } } } }
     { pref-dim { $ WINDOW-WIDTH $ WINDOW-HEIGHT } }
