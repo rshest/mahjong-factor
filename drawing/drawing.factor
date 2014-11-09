@@ -16,9 +16,9 @@ TUPLE: sprite-atlas
     GL_TEXTURE_2D glEnable
     GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR glTexParameteri ;
 
-:: setup-matrices ( width height -- )
+:: setup-matrices ( WIDTH HEIGHT -- )
     GL_PROJECTION glMatrixMode glLoadIdentity
-    0.0 width >float height >float 0.0 gluOrtho2D
+    0.0 WIDTH >float HEIGHT >float 0.0 gluOrtho2D
     GL_MODELVIEW glMatrixMode glLoadIdentity ;
 
 : clear-screen ( r g b a -- )
@@ -28,25 +28,25 @@ TUPLE: sprite-atlas
 : get-uv-scale ( frame-side dim -- scale )
     [ GL_TEXTURE_2D 0 ] dip get-texture-int [ >float ] bi@ / ;
 
-:: load-sprite-atlas ( atlas res-path --  )
-    res-path atlas file-path>> append load-image
-    make-texture atlas swap >>texture-id 
-    GL_TEXTURE_2D atlas texture-id>> glBindTexture
-    atlas frame-width>> GL_TEXTURE_WIDTH get-uv-scale >>s-scale
-    atlas frame-height>> GL_TEXTURE_HEIGHT get-uv-scale >>t-scale drop ;
+:: load-sprite-atlas ( ATLAS RES-PATH --  )
+    RES-PATH ATLAS file-path>> append load-image
+    make-texture ATLAS swap >>texture-id 
+    GL_TEXTURE_2D ATLAS texture-id>> glBindTexture
+    ATLAS frame-width>> GL_TEXTURE_WIDTH get-uv-scale >>s-scale
+    ATLAS frame-height>> GL_TEXTURE_HEIGHT get-uv-scale >>t-scale drop ;
 
-:: draw-sprite ( atlas sprite-id pos -- )
-    GL_TEXTURE_2D atlas texture-id>> glBindTexture    
+:: draw-sprite ( ATLAS SPRITE-ID POS -- )
+    GL_TEXTURE_2D ATLAS texture-id>> glBindTexture    
     no-mip-filter
-    [let pos first  :> x
-         pos second :> y
-         atlas frame-width>>  x + :> r
-         atlas frame-height>> y + :> b
-         atlas cols>> sprite-id swap /mod [ >float ] bi@ :> col :> row
-         atlas s-scale>> col * :> u
-         atlas t-scale>> row * :> v
-         atlas s-scale>> u + :> u1
-         atlas t-scale>> v + :> v1
+    [let POS first  :> x
+         POS second :> y
+         ATLAS frame-width>>  x + :> r
+         ATLAS frame-height>> y + :> b
+         ATLAS cols>> SPRITE-ID swap /mod [ >float ] bi@ :> col :> row
+         ATLAS s-scale>> col * :> u
+         ATLAS t-scale>> row * :> v
+         ATLAS s-scale>> u + :> u1
+         ATLAS t-scale>> v + :> v1
         GL_QUADS [
             u  v  glTexCoord2f x y glVertex2f
             u1 v  glTexCoord2f r y glVertex2f

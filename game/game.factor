@@ -2,7 +2,7 @@ USING: kernel math accessors sequences arrays
 math.vectors
 splitting grouping hashtables sets hash-sets assocs locals
 io.files io.encodings.ascii unicode.categories math.ranges math.order sorting.slots
-random ;
+random match ;
 IN: mahjong.game
 
 CONSTANT: DEFAULT-STONE-ID 4
@@ -28,6 +28,35 @@ TUPLE: stone i j layer id { bg-id initial: 0 } blocking ;
 : hide-stones ( layout idx-seq -- )
     [ over nth STONE-HIDDEN >>bg-id ] map 2drop ;
 
+: toggle-select ( stone -- )
+    dup bg-id>> STONE-SELECTED = 
+    [ STONE-NORMAL ] [ STONE-SELECTED ] if >>bg-id drop ;
+
+: get-selected ( layout -- sel-idx )
+    [ bg-id>> ] map STONE-SELECTED swap indices ;
+
+:: is-blocked? ( STONE LAYOUT -- t/f )
+    STONE blocking>> [ top>> ] [ left>> ] [ right>> ] tri 
+    [ [ LAYOUT nth bg-id>> STONE-HIDDEN = not ] any? ] tri@ and or ;
+
+: unselect-all ( layout -- )
+    [ dup bg-id>> STONE-HIDDEN = not [ STONE-NORMAL >>bg-id  ] when drop ] each ;
+
+MATCH-VARS: ?a ;
+:: hide-match ( LAYOUT -- )
+    LAYOUT get-selected dup 
+    [ LAYOUT nth id>> ] map { ?a ?a } match
+    [ LAYOUT swap hide-stones ] [ drop ] if ;
+
+:: select-stone ( LAYOUT STONE-IDX/F -- )
+    STONE-IDX/F [ 
+        LAYOUT nth 
+        dup LAYOUT is-blocked? [ drop ] [ toggle-select ] if 
+    ] [
+        LAYOUT unselect-all
+    ] if* 
+    LAYOUT hide-match ;
+
 <PRIVATE
 
 :: set-at ( pos val pos-arr -- )
@@ -38,15 +67,15 @@ TUPLE: stone i j layer id { bg-id initial: 0 } blocking ;
 :: dec-block ( pos-arr i j layer --  )
     BLOCK-OFFSETS [ { j i } v+ layer -1 + pos-arr set-at ] each ;
 
-:: peel-block ( val i j pos-arr layer -- layout-entry/f )
-    BLOCK-OFFSETS [ { j i } v+ pos-arr [ swap ?nth ] reduce ] map
-    [ layer = ] all?
-    [ pos-arr i j layer [ dec-block ] 3keep <stone> ] [ f ] if ;
+:: peel-block ( VAL I J POS-ARR LAYER -- layout-entry/f )
+    BLOCK-OFFSETS [ { J I } v+ POS-ARR [ swap ?nth ] reduce ] map
+    [ LAYER = ] all?
+    [ POS-ARR I J LAYER [ dec-block ] 3keep <stone> ] [ f ] if ;
 
-:: peel-layer ( layer pos-arr -- layout-entries )
-    pos-arr but-last [
+:: peel-layer ( LAYER POS-ARR -- layout-entries )
+    POS-ARR but-last [
         swap but-last [
-            pick pos-arr layer peel-block
+            pick POS-ARR LAYER peel-block
         ] map-index sift nip
     ] map-index concat ;
 
@@ -64,12 +93,12 @@ PRIVATE>
         BLOCK-OFFSETS [ { i j } v+ { layer } append idx 2array ] map
     ] ] map-index concat >hashtable ;
 
-:: get-blocking ( blockers cov pos -- blocking )
-    blockers [ pos v+ cov swap of ] map sift >hash-set members ;
+:: get-blocking ( BLOCKERS COV POS -- blocking )
+    BLOCKERS [ POS v+ COV swap of ] map sift >hash-set members ;
 
-:: get-tlr-blocking ( cov pos -- blocking )
+:: get-tlr-blocking ( COV POS -- blocking )
     TOP-BLOCKING LEFT-BLOCKING RIGHT-BLOCKING
-    [ cov pos get-blocking ] tri@ stone-blocking boa ;
+    [ COV POS get-blocking ] tri@ stone-blocking boa ;
 
 : build-layout-blockers ( layout -- blocking-arr )
     [ coverage-table ] keep
@@ -77,10 +106,6 @@ PRIVATE>
 
 : set-layout-blockers ( layout -- )
     [ build-layout-blockers ] keep [ swap >>blocking drop ] 2each ;
-
-:: is-blocked? ( stone board -- t/f )
-    stone blocking>> [ top>> ] [ left>> ] [ right>> ] tri 
-    [ [ board nth bg-id>> STONE-HIDDEN = not ] any? ] tri@ and or ;
 
 : load-layouts ( res-path -- layouts )
     "layouts.txt" append ascii file-lines 

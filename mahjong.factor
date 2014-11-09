@@ -1,5 +1,5 @@
 USING: locals prettyprint arrays sequences kernel shuffle combinators
-math math.vectors
+math math.vectors 
 game.worlds game.loop ui.gadgets.worlds ui.pixel-formats
 literals accessors assocs
 game.input game.input.scancodes ui.gestures
@@ -23,21 +23,24 @@ CONSTANT: SPRITES {
     T{ sprite-atlas f "stones_bg.png" 2 1 70 85 }
     T{ sprite-atlas f "stones_fg.png" 16 15 64 64 } }
 
-:: stone-pos ( i j layer -- pos )
-    { i j } STONE-EXTENTS v* 2 v/n
-    STONE-3D-OFFSET layer v*n v+
+:: stone-pos ( I J LAYER -- pos )
+    { I J } STONE-EXTENTS v* 2 v/n
+    STONE-3D-OFFSET LAYER v*n v+
     ;
 
-:: draw-stone-by-pos ( stone-id bg-id pos -- )
-    0 SPRITES nth bg-id pos draw-sprite
-    1 SPRITES nth stone-id pos FACE-OFFSET v+ draw-sprite ;
+:: draw-stone-by-pos ( STONE-ID BG-ID POS -- )
+    BG-ID STONE-HIDDEN = not [
+        0 SPRITES nth BG-ID POS draw-sprite
+        1 SPRITES nth STONE-ID POS FACE-OFFSET v+ draw-sprite 
+    ] when ;
 
 : draw-stone ( stone -- )
     [ id>> ] [ bg-id>> ] [ ijlayer>> ] tri
     stone-pos draw-stone-by-pos ;
   
 TUPLE: mahjong-world < game-world 
-    { board initial: { } } layouts stone-descr ;
+    { board initial: { } } 
+    layouts stone-descr ;
 
 M: mahjong-world begin-game-world
     SPRITES [ RESOURCES-PATH load-sprite-atlas ] each
@@ -51,13 +54,12 @@ M: mahjong-world begin-game-world
 : in-stone? ( loc stone -- t/f )
     ijlayer>> stone-pos
     dup STONE-EXTENTS v+
-    pick [ v> vall? ] 2bi@ and ;
-  
-:: mouse-click ( world loc -- )
-  world board>> [ loc swap in-stone? ] find-last
-  [ world board>> nth 
-    dup world board>> is-blocked? not [ 1 >>bg-id ] when 
-    ] when drop ;
+    pick [ v> vall? ] 2bi@ and ; 
+
+:: mouse-click ( WORLD LOC -- )
+    WORLD board>> dup 
+    [ LOC swap [ nip bg-id>> STONE-HIDDEN = not ] [ in-stone? ] 2bi and ] 
+    find-last drop select-stone ;
   
 mahjong-world H{
   { T{ button-down f f 1 } [ dup hand-rel mouse-click ] }
@@ -65,7 +67,7 @@ mahjong-world H{
                      
 M: mahjong-world draw-world*
     enable-blend no-mip-filter
-    WINDOW-WIDTH WINDOW-HEIGHT setup-matrices
+    dup dim>> [ first ] [ second ] bi setup-matrices
     BG-COLOR call clear-screen
     board>> [ draw-stone ] each ;
 
