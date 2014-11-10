@@ -84,9 +84,9 @@ PRIVATE>
 : parse-layout ( lines -- layout )
     [ >array [ 48 - ] map ] map
     [let :> pos-arr
-        pos-arr supremum supremum :> max-layer
+        pos-arr [ supremum ] map supremum :> max-layer
         max-layer 1 [a,b] [ pos-arr peel-layer ] map concat ]
-    { { layer>> <=> } { i>> <=> } { j>> <=> }  } sort-by ;
+    { { layer>> <=> } { j>> <=> } { i>> <=> }  } sort-by ;
 
 : coverage-table ( layout -- table )
     [ [let :> idx ijlayer>> :> layer :> j :> i

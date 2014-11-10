@@ -3,13 +3,15 @@ math math.vectors
 game.worlds game.loop ui.gadgets.worlds ui.pixel-formats
 literals accessors assocs
 game.input game.input.scancodes ui.gestures
+ui.gadgets.status-bar
 mahjong.drawing mahjong.game
+random
 ;
 
 IN: mahjong
 
-CONSTANT: WINDOW-WIDTH     1024
-CONSTANT: WINDOW-HEIGHT    768
+CONSTANT: WINDOW-WIDTH     700
+CONSTANT: WINDOW-HEIGHT    500
 
 CONSTANT: BG-COLOR         [ 0.3 0.24 0.13 0.0 ]
 CONSTANT: RESOURCES-PATH   "vocab:mahjong/_resources/"
@@ -40,15 +42,23 @@ CONSTANT: SPRITES {
   
 TUPLE: mahjong-world < game-world 
     { board initial: { } } 
-    layouts stone-descr ;
+    layouts 
+    stone-descr 
+    { board-offset initial: { 20.0 50.0 } } 
+    { board-scale initial: 0.7 } 
+    ;
+
+: new-game ( world -- )
+    dup layouts>> dup keys 1 sample first of >>board    
+    dup [ board>> ] [ stone-descr>> length ] bi init-layout-random  
+    drop ;
 
 M: mahjong-world begin-game-world
     SPRITES [ RESOURCES-PATH load-sprite-atlas ] each
     RESOURCES-PATH load-layouts >>layouts
-    dup layouts>> "Turtle" of >>board
     dup layouts>> values [ set-layout-blockers ] each
     RESOURCES-PATH load-stone-descriptions >>stone-descr
-    dup [ board>> ] [ stone-descr>> length ] bi init-layout-random  
+    dup new-game
     drop ;
 
 : in-stone? ( loc stone -- t/f )
@@ -57,17 +67,19 @@ M: mahjong-world begin-game-world
     pick [ v> vall? ] 2bi@ and ; 
 
 :: mouse-click ( WORLD LOC -- )
-    WORLD board>> dup 
-    [ LOC swap [ nip bg-id>> STONE-HIDDEN = not ] [ in-stone? ] 2bi and ] 
-    find-last drop select-stone ;
+    [let LOC WORLD board-offset>> v- WORLD board-scale>> v/n :> LOC1
+        WORLD board>> dup 
+        [ LOC1 swap [ nip bg-id>> STONE-HIDDEN = not ] [ in-stone? ] 2bi and ] 
+        find-last drop select-stone ] ;
   
 mahjong-world H{
   { T{ button-down f f 1 } [ dup hand-rel mouse-click ] }
 } set-gestures
                      
 M: mahjong-world draw-world*
-    enable-blend no-mip-filter
-    dup dim>> [ first ] [ second ] bi setup-matrices
+    enable-blend no-mip-filter 
+    dup [ board-offset>> ] [  board-scale>> ] [ dim>> ] tri
+    [ first ] [ second ] bi setup-matrices
     BG-COLOR call clear-screen
     board>> [ draw-stone ] each ;
 
@@ -77,6 +89,5 @@ GAME: mahjong {
     { pixel-format-attributes {
         windowed double-buffered T{ depth-bits { value 24 } } } }
     { pref-dim { $ WINDOW-WIDTH $ WINDOW-HEIGHT } }
-    { tick-interval-nanos $[ 60 fps ] }
-} ;
+    { tick-interval-nanos $[ 60 fps ] } } ;
 

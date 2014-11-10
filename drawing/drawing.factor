@@ -16,10 +16,13 @@ TUPLE: sprite-atlas
     GL_TEXTURE_2D glEnable
     GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR glTexParameteri ;
 
-:: setup-matrices ( WIDTH HEIGHT -- )
+:: setup-matrices ( OFFSET SCALE WIDTH HEIGHT -- )
     GL_PROJECTION glMatrixMode glLoadIdentity
     0.0 WIDTH >float HEIGHT >float 0.0 gluOrtho2D
-    GL_MODELVIEW glMatrixMode glLoadIdentity ;
+    GL_MODELVIEW glMatrixMode 
+    glLoadIdentity 
+    OFFSET first OFFSET second 0.0 glTranslatef
+    SCALE SCALE SCALE glScalef ;
 
 : clear-screen ( r g b a -- )
     glClearColor
