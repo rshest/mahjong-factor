@@ -56,7 +56,6 @@ TUPLE: mahjong-world < game-world
 M: mahjong-world begin-game-world
     SPRITES [ RESOURCES-PATH load-sprite-atlas ] each
     RESOURCES-PATH load-layouts >>layouts
-    dup layouts>> values [ set-layout-blockers ] each
     RESOURCES-PATH load-stone-descriptions >>stone-descr
     dup new-game
     drop ;

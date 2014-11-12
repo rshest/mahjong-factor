@@ -111,7 +111,8 @@ PRIVATE>
     "layouts.txt" append ascii file-lines 
     [ "---" swap start ] split-when harvest 2 group
     [ dup first first [ blank? ] trim
-      swap second parse-layout 2array ] map >hashtable ;
+      swap second parse-layout 2array ] map >hashtable 
+    dup values [ set-layout-blockers ] each ;
 
 : load-stone-descriptions ( res-path -- descr-array )
     "stones_desc.txt" append ascii file-lines 
@@ -121,3 +122,7 @@ PRIVATE>
     iota over length 4 / sample 
     4 [ dup ] replicate concat nip
     [ >>id drop ] 2each ;
+
+: find-matches ( layout -- matches )
+    
+    ;
